@@ -1,0 +1,32 @@
+/**
+ * baseWebApp — configurazione dell'applicazione base (step B0).
+ *
+ * Scelte derivate dalle decisioni di piano (docs/piattaforma-base.md §1):
+ *  - monolite (no microservizi prematuri)
+ *  - autenticazione JWT (API mobile-ready)
+ *  - Angular come client
+ *  - PostgreSQL in dev e prod
+ *  - build Maven, Java 21 (LTS, minimo richiesto da JHipster 9)
+ *  - i18n statico JHipster: italiano + inglese
+ *
+ * Nessuna entità di dominio qui: la base è generica. Le entità dei consumer
+ * (es. skin-lesion) si definiscono nei rispettivi JDL.
+ */
+application {
+  config {
+    baseName baseWebApp
+    applicationType monolith
+    packageName com.basewebapp
+    authenticationType jwt
+    buildTool maven
+    clientFramework angular
+    prodDatabaseType postgresql
+    devDatabaseType postgresql
+    cacheProvider ehcache
+    enableHibernateCache true
+    clientTheme none
+    enableTranslation true
+    nativeLanguage en
+    languages [en, it]
+  }
+}
