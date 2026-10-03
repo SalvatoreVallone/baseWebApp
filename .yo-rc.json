@@ -1,0 +1,22 @@
+{
+  "generator-jhipster": {
+    "applicationType": "monolith",
+    "authenticationType": "jwt",
+    "baseName": "baseWebApp",
+    "buildTool": "maven",
+    "cacheProvider": "ehcache",
+    "clientFramework": "angular",
+    "clientTheme": "none",
+    "creationTimestamp": 1701947317348,
+    "devDatabaseType": "postgresql",
+    "enableHibernateCache": true,
+    "enableTranslation": true,
+    "entities": [],
+    "jhipsterVersion": "9.4.0",
+    "jwtSecretKey": "ZWEzNzMzMWEyZTA2NDRiNzMzNDU4MWMxZmNiZjdiZjhmNDJiYTlmNDgwNjgxZjVmMmE0Yzk3ZDM0MDU2YjgwYTgyZmZhYzgzODBhOTY4NDBhNDc1OTA0MTk3Mzg1MjFmMzUyZTIxMDZkMzNjMTAyNjE5MmY5ZDdjMWJjOWY2ZWQ=",
+    "languages": ["en", "it"],
+    "nativeLanguage": "en",
+    "packageName": "com.basewebapp",
+    "prodDatabaseType": "postgresql"
+  }
+}
