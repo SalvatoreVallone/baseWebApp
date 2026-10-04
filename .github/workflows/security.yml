@@ -1,0 +1,85 @@
+name: security
+
+# Hardening B2 — scansioni di sicurezza automatiche. Vedi docs/sicurezza.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # ogni lunedì 06:00 UTC: intercetta CVE nuove su dipendenze invariate
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+  security-events: write # richiesto da CodeQL per pubblicare i risultati
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-audit:
+    name: npm audit (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: npm audit (fallisce su High/Critical)
+        run: npm audit --omit=dev --audit-level=high
+
+  backend-dependency-check:
+    name: OWASP dependency-check (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: OWASP dependency-check
+        # Una NVD_API_KEY (secret del repo) velocizza molto il download del DB NVD.
+        # Senza chiave resta eseguibile ma lento/rate-limited: non blocca la pipeline.
+        continue-on-error: true
+        run: >
+          ./mvnw -ntp -Psecurity org.owasp:dependency-check-maven:check
+          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.*
+          if-no-files-found: ignore
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          language: ${{ matrix.language }}
+          queries: security-extended
+      - name: Setup Java
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Build (Java)
+        if: matrix.language == 'java-kotlin'
+        run: ./mvnw -ntp -DskipTests -Dskip.installnodenpm -Dskip.npm compile
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
