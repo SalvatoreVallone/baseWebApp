@@ -49,8 +49,8 @@ Qui la vista combinata di avanzamento.
 | Step | Obiettivo | Stato | Branch | PR |
 |------|-----------|-------|--------|----|
 | B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | ✅ | `B0-bootstrap-jhipster` | #1 (mergiata) |
-| B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | 🔜 in review | `B1-convenzioni-api-mobile-ready` | — |
-| B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | ⬜ | — | — |
+| B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | ✅ | `B1-convenzioni-api-mobile-ready` | #2 (mergiata) |
+| B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | 🔜 in review | `B2-security-hardening` | — |
 | B3 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
 | B4 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
 | B5 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
@@ -190,6 +190,8 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-10-04 | B2 | `B2-security-hardening` | in review | Hardening: HSTS esplicito, CSP prod più stretta (no `unsafe-eval`/googleapis; +object-src/base-uri/form-action/frame-ancestors), esposizione actuator minima in prod, `/management/prometheus` non più pubblico. Scansione dipendenze: profilo Maven `security` (OWASP dependency-check) + `npm audit` + workflow CI (+CodeQL). Documento `docs/sicurezza.md` (review OWASP, injection/XSS/CSRF, checklist, dati sanitari). |
+| 2026-10-04 | B1 | `B1-convenzioni-api-mobile-ready` | ✅ mergiata (PR #2) | Convenzioni API & mobile-ready mergiate su `main` (commit `9f3fc17`). |
 | 2026-10-04 | — | — | roadmap | Inserito **B2 — Security review & hardening** come prossimo step (prima dello Starter AI/ML); ex B2/B3/B4 → B3/B4/B5. Aggiunto un **gate di sicurezza ricorrente** alla Definition of Done (§4). Origine: verifica su richiesta della base generata (SQLi: nessun rischio; CSRF: ok by design con JWT in header; XSS: baseline buona, CSP prod da irrigidire). |
 | 2026-10-04 | B1 | `B1-convenzioni-api-mobile-ready` | in review | Convenzioni API & mobile-ready: versioning `/api/v1` per l'API di dominio (marker `@ApiV1` + `ApiVersioningConfiguration`, additivo), endpoint di esempio `/api/v1/version` + slice test, CORS prod env-driven, blocco OpenAPI scaricabile, `docs/convenzioni-api.md` e `docs/guida-entita-jdl.md`. |
 | 2026-10-04 | B0 | `B0-bootstrap-jhipster` | ✅ mergiata (PR #1) | Scaffold JHipster della base mergiato su `main` (commit `b5ac744`). |
