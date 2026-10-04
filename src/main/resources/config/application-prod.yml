@@ -20,6 +20,12 @@ logging:
     com.basewebapp: INFO
 
 management:
+  endpoints:
+    web:
+      exposure:
+        # Hardening B2: in prod esponi solo gli endpoint necessari (niente env/configprops/liquibase/
+        # threaddump ecc., che sono info-leak anche se protetti da ADMIN). Vedi docs/sicurezza.md.
+        include: 'health,info,prometheus,metrics'
   prometheus:
     metrics:
       export:
@@ -99,6 +105,10 @@ jhipster:
     allow-credentials: true
     max-age: 1800
   security:
+    # Hardening B2: CSP di prod più stretta della default condivisa — rimossi 'unsafe-eval' e
+    # l'allowlist storage.googleapis.com da script-src; aggiunti object-src/base-uri/form-action/
+    # frame-ancestors. 'unsafe-inline' resta solo su style-src (richiesto da Angular). Vedi docs/sicurezza.md.
+    content-security-policy: "default-src 'self'; frame-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
     authentication:
       jwt:
         # Token is valid 24 hours

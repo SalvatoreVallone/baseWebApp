@@ -50,6 +50,9 @@ public class SecurityConfiguration {
                             "camera=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), sync-xhr=()"
                         )
                     )
+                    // HSTS esplicito: forza HTTPS per 1 anno (attivo solo su connessioni sicure).
+                    // Hardening B2 — vedi docs/sicurezza.md.
+                    .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
             )
             .authorizeHttpRequests(authz ->
                 // prettier-ignore
@@ -72,7 +75,8 @@ public class SecurityConfiguration {
                     .requestMatchers("/management/health").permitAll()
                     .requestMatchers("/management/health/**").permitAll()
                     .requestMatchers("/management/info").permitAll()
-                    .requestMatchers("/management/prometheus").permitAll()
+                    // Hardening B2: /management/prometheus NON è più pubblico (evita leak di metriche
+                    // interne); ricade sotto la regola ADMIN seguente. Vedi docs/sicurezza.md.
                     .requestMatchers("/management/**").hasAuthority(AuthoritiesConstants.ADMIN)
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

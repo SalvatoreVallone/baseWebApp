@@ -826,6 +826,30 @@
                 <profile.api-docs>,api-docs</profile.api-docs>
             </properties>
         </profile>
+        <!-- Hardening B2: scansione vulnerabilità delle dipendenze (opt-in, usata in CI).
+             Uso: ./mvnw -Psecurity org.owasp:dependency-check-maven:check
+             Nota: il primo run scarica il DB NVD (serve rete; una NVD_API_KEY velocizza molto).
+             Vedi docs/sicurezza.md. -->
+        <profile>
+            <id>security</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>12.1.9</version>
+                        <configuration>
+                            <failBuildOnCVSS>8</failBuildOnCVSS>
+                            <formats>
+                                <format>HTML</format>
+                                <format>JSON</format>
+                            </formats>
+                            <skipTestScope>true</skipTestScope>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>dev</id>
             <activation>
