@@ -172,3 +172,19 @@ npx @openapitools/openapi-generator-cli generate \
 - [ ] Liste paginate con `Pageable` + `PaginationUtil` (§3).
 - [ ] Se pubblico: aggiungere il matcher `permitAll()` in `SecurityConfiguration` prima di `/api/**`.
 - [ ] Documentazione OpenAPI tramite annotazioni springdoc dove utile.
+
+---
+
+## 7. Sicurezza (postura attuale)
+
+Sintesi verificata sulla base (2026-10-04); la review sistematica e l'hardening sono lo step **B2**
+([`piattaforma-base.md`](piattaforma-base.md) §4.1), con un gate ricorrente nella Definition of Done.
+
+- **SQL injection:** accesso dati solo via Spring Data JPA parametrizzato; **vietate** query
+  native/concatenate non parametrizzate (usare `@Param`/binding).
+- **CSRF:** disabilitato **perché** l'auth è JWT stateless con token in header `Authorization`
+  (non cookie). Se si introduce auth via cookie, **riattivare** il CSRF.
+- **XSS:** API JSON + auto-escaping Angular + CSP. Evitare `innerHTML`/`bypassSecurityTrust` su input
+  utente. Irrigidimento CSP/HSTS in prod → step B2.
+- **Access control:** default `authenticated()` su `/api/**`; endpoint pubblici solo con matcher
+  esplicito; usare `@PreAuthorize` per regole fini.

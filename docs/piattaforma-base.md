@@ -64,26 +64,57 @@ Legenda: ✅ fatta · 🔜 prossimo · ⬜ da fare. Ogni step = un branch + una 
 |------|-----------|-------|-------------|
 | **B0 — Bootstrap base con JHipster** | Scheletro generato | ✅ | Repo base creato; app JHipster generata (monolite, Angular, JWT, PostgreSQL, OpenAPI); scelte JDL/opzioni documentate; build/run verificati. PR #1 mergiata. |
 | **B1 — Convenzioni & API mobile-ready** | Contratto stabile | 🔜 in review | Versioning `/api/v1` (marker `@ApiV1`, additivo), CORS prod env-driven per client nativi, convenzioni error (RFC7807)/paginazione documentate, spec OpenAPI scaricabile per codegen; guida JDL. Vedi `docs/convenzioni-api.md` e `docs/guida-entita-jdl.md`. |
-| **B2 — Starter AI/ML** | Il pezzo custom | ⬜ | `ai-ml-integration-starter` pubblicato (Maven/GitHub Packages): contratto provider + adapter REST + provider mock; SemVer + config publishing |
-| **B3 — Blueprint deploy costo-zero** | Produzione a costo zero | ⬜ | Profilo GraalVM native (opzionale) documentato; target di deploy free-tier provato (es. Oracle Always Free + Postgres gestito); ML isolato/scale-to-zero |
-| **B4 — Archetype/create-app** | Avvio nuovo progetto | ⬜ | Ricetta ripetibile per un nuovo consumer: JDL base + dipendenza starter AI/ML + convenzioni; eventuale Angular lib se necessaria |
+| **B2 — Security review & hardening** | Base sicura e verificabile | ⬜ | Review sistematica (OWASP Top-10/ASVS) di base e API: injection, XSS, CSRF, auth/JWT, access control, security headers, secrets, dipendenze, rate-limit, audit, privacy dati sanitari. Hardening concreti (CSP prod, HSTS, actuator minimo, rate-limit login) + `docs/sicurezza.md` con postura e checklist; scansione dipendenze in CI. Vedi §4.1 |
+| **B3 — Starter AI/ML** | Il pezzo custom | ⬜ | `ai-ml-integration-starter` pubblicato (Maven/GitHub Packages): contratto provider + adapter REST + provider mock; SemVer + config publishing |
+| **B4 — Blueprint deploy costo-zero** | Produzione a costo zero | ⬜ | Profilo GraalVM native (opzionale) documentato; target di deploy free-tier provato (es. Oracle Always Free + Postgres gestito); ML isolato/scale-to-zero |
+| **B5 — Archetype/create-app** | Avvio nuovo progetto | ⬜ | Ricetta ripetibile per un nuovo consumer: JDL base + dipendenza starter AI/ML + convenzioni; eventuale Angular lib se necessaria |
 
 > Molto più corta della bozza precedente: gli ex B1/B2/B4/B5 (generatore, backend-core, identità,
 > shell) sono assorbiti da JHipster in **B0**.
+
+### 4.1 B2 — Security review & hardening (dettaglio)
+
+Step dedicato alla sicurezza, **più** un gate ricorrente nella Definition of Done
+([`sviluppo-autonomo.md`](sviluppo-autonomo.md) §4) applicato a ogni step successivo. Motivato dalla
+natura **sanitaria** dei dati del consumer skin-lesion.
+
+**Ambito della review (OWASP Top-10 / ASVS come riferimento):**
+
+- Injection (SQL/NoSQL/command), XSS, CSRF, SSRF.
+- Autenticazione e sessione: JWT, scadenze, rotazione, brute-force su login.
+- Broken access control: matcher e `@PreAuthorize`, isolamento per utente/paziente.
+- Security headers: CSP, HSTS, `X-Content-Type-Options`, referrer/permissions policy.
+- Gestione segreti e configurazione (niente segreti in repo; `application-secret`).
+- Vulnerabilità delle dipendenze: OWASP Dependency-Check (Maven) + `npm audit`, in CI.
+- Rate limiting / abuse, audit logging degli accessi, logging senza dati sensibili.
+- Privacy dati sanitari: minimizzazione, cifratura at-rest dove previsto, data retention.
+
+**Baseline già verificata (2026-10-04, su B0+B1):**
+
+- **SQL injection:** nessun rischio nella base — solo Spring Data JPA parametrizzato, nessuna query
+  nativa/concatenata.
+- **CSRF:** corretto by-design — sessione stateless, JWT in `localStorage` inviato come header
+  `Authorization: Bearer` (non cookie); `csrf.disable()` appropriato. *Caveat:* riattivare il CSRF se
+  si passa ad auth via cookie.
+- **XSS:** baseline buona (API JSON, auto-escaping Angular, CSP presente). Da irrigidire in prod:
+  CSP con `script-src 'unsafe-inline' 'unsafe-eval'` e assenza di HSTS.
+
+**Hardening previsti:** CSP prod più stretta, HSTS, esposizione actuator minima, eventuale
+rate-limit su `/api/authenticate`, documento `docs/sicurezza.md` con postura e checklist.
 
 ## 5. Roadmap — Traccia skin-lesion (questo repo → app JHipster)
 
 | Step | Obiettivo | Stato | Deliverable |
 |------|-----------|-------|-------------|
-| **S0 — Ri-scaffold come app JHipster** | Diventa consumer | ⬜ | skin-lesion rigenerata come app JHipster che importa lo starter AI/ML; entità di dominio ridefinite in JDL. **Dipende da B0–B2.** Vedi §7 sul codice legacy |
-| **S1 — ml-service come provider** | Integrazione | ⬜ | Modello CV skin (FastAPI/PyTorch) registrato dietro lo starter AI/ML (B2) |
+| **S0 — Ri-scaffold come app JHipster** | Diventa consumer | ⬜ | skin-lesion rigenerata come app JHipster che importa lo starter AI/ML; entità di dominio ridefinite in JDL. **Dipende da B0–B3.** Vedi §7 sul codice legacy |
+| **S1 — ml-service come provider** | Integrazione | ⬜ | Modello CV skin (FastAPI/PyTorch) registrato dietro lo starter AI/ML (B3) |
 | **S2 — Diario clinico** (ex Fase 1) | Dati clinici | ⬜ | Entità di dominio in JDL, timeline, grafici, upload referti |
 | **S3 — AI multimodale** (ex Fase 2) | Interrogazione | ⬜ | Orchestratore AI sui dati paziente — **dopo** che l'isolamento utenti di JHipster è configurato/solido |
 | **S4 — PWA / client mobile** (ex Fase 3) | Mobilità | ⬜ | PWA + eventuali client nativi sull'API mobile-ready (B1) |
 | **S5 — Interoperabilità** (ex Fase 4) | Ecosistema | ⬜ | Export FHIR, mappatura LOINC/ATC |
 
-> **Ordine:** prima BASE B0→B2 (fino allo starter AI/ML consumabile), poi S0. B3/B4 in parallelo o
-> dopo, quando la forma del consumer è chiara.
+> **Ordine:** prima BASE B0→B3 (fino allo starter AI/ML consumabile, sicurezza inclusa), poi S0.
+> B4/B5 in parallelo o dopo, quando la forma del consumer è chiara.
 
 ---
 

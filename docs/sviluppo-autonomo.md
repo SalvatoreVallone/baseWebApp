@@ -50,9 +50,10 @@ Qui la vista combinata di avanzamento.
 |------|-----------|-------|--------|----|
 | B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | ✅ | `B0-bootstrap-jhipster` | #1 (mergiata) |
 | B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | 🔜 in review | `B1-convenzioni-api-mobile-ready` | — |
-| B2 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
-| B3 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
-| B4 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
+| B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | ⬜ | — | — |
+| B3 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
+| B4 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
+| B5 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
 
 **Traccia skin-lesion** — questo repo (→ app JHipster):
 
@@ -60,14 +61,14 @@ Qui la vista combinata di avanzamento.
 |------|-----------|-------|--------|----|
 | Fase 0 — Fondamenta DB | core-datagen + pipeline | ✅ → legacy (sostituito da JHipster) | — | — |
 | Fase 0b — Catalogo i18n | label/app_message, seeder | ✅ → legacy (i18n statico JHipster) | — | — |
-| S0 — Ri-scaffold come app JHipster | rigenera + importa starter AI/ML, dominio in JDL | 🔒 B0–B2 | — | — |
-| S1 — ml-service provider | modello CV dietro lo starter AI/ML | 🔒 B2 | — | — |
+| S0 — Ri-scaffold come app JHipster | rigenera + importa starter AI/ML, dominio in JDL | 🔒 B0–B3 | — | — |
+| S1 — ml-service provider | modello CV dietro lo starter AI/ML | 🔒 B3 | — | — |
 | S2 — Diario clinico (ex Fase 1) | entità dominio (JDL), timeline, grafici, referti | ⬜ | — | — |
 | S3 — AI multimodale (ex Fase 2) | orchestratore sui dati paziente | 🔒 isolamento utenti | — | — |
 | S4 — PWA / client mobile (ex Fase 3) | PWA + client sull'API mobile-ready | 🔒 B1 | — | — |
 | S5 — Interoperabilità (ex Fase 4) | export FHIR, LOINC/ATC | ⬜ | — | — |
 
-> **Regole di dipendenza:** S0 richiede B0–B2 (base + starter AI/ML consumabile); l'AI sui dati (S3)
+> **Regole di dipendenza:** S0 richiede B0–B3 (base, sicurezza di base e starter AI/ML consumabile); l'AI sui dati (S3)
 > non parte prima che l'isolamento utenti sia configurato/solido.
 > **Prossimo passo concreto:** l'utente crea il repo base e ne comunica nome/URL → si parte da **B0**.
 
@@ -125,7 +126,14 @@ Uno step è "done" e pronto per la PR solo quando **tutte** queste condizioni va
 - [ ] La verifica end-to-end sensata per lo step è stata fatta (pipeline Docker, chiamate API, ecc.)
       **oppure** i limiti di verifica sono dichiarati onestamente nella descrizione PR.
 - [ ] Nessuna regressione evidente sulle funzionalità esistenti.
-- [ ] La migrazione Flyway (se presente) è **append-only** e non riscrive migrazioni già applicate.
+- [ ] La migrazione Flyway/Liquibase (se presente) è **append-only** e non riscrive migrazioni già applicate.
+- [ ] **Gate di sicurezza** (dettaglio e postura: `docs/sicurezza.md` dallo step B2):
+      - nessuna query nativa/concatenata non parametrizzata introdotta (solo Spring Data / binding);
+      - ogni nuovo endpoint ha un access control esplicito (matcher o `@PreAuthorize`); default = autenticato;
+      - nessun `innerHTML` / `bypassSecurityTrust` alimentato da input utente; output API in JSON;
+      - nessun segreto committato (chiavi, password, token) — usare env/`application-secret`;
+      - `./npmw audit` e la scansione dipendenze backend senza vulnerabilità **High/Critical** nuove;
+      - se si introduce auth via cookie, il **CSRF va riattivato** (ora disabilitato perché JWT in header).
 - [ ] Documentazione aggiornata: questo file (§2 stato + §6 registro) e, se serve, `README.md` e/o un
       log di implementazione della fase in `docs/`.
 
@@ -182,6 +190,7 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-10-04 | — | — | roadmap | Inserito **B2 — Security review & hardening** come prossimo step (prima dello Starter AI/ML); ex B2/B3/B4 → B3/B4/B5. Aggiunto un **gate di sicurezza ricorrente** alla Definition of Done (§4). Origine: verifica su richiesta della base generata (SQLi: nessun rischio; CSRF: ok by design con JWT in header; XSS: baseline buona, CSP prod da irrigidire). |
 | 2026-10-04 | B1 | `B1-convenzioni-api-mobile-ready` | in review | Convenzioni API & mobile-ready: versioning `/api/v1` per l'API di dominio (marker `@ApiV1` + `ApiVersioningConfiguration`, additivo), endpoint di esempio `/api/v1/version` + slice test, CORS prod env-driven, blocco OpenAPI scaricabile, `docs/convenzioni-api.md` e `docs/guida-entita-jdl.md`. |
 | 2026-10-04 | B0 | `B0-bootstrap-jhipster` | ✅ mergiata (PR #1) | Scaffold JHipster della base mergiato su `main` (commit `b5ac744`). |
 | 2026-09-30 | — | — | revisione 2 | Pivot su **JHipster** per la base (build-vs-buy: JHipster 9.3 supporta Spring Boot 4.1/Java 25/Angular 22). Custom ridotto allo starter AI/ML; i18n statico (abbandonato catalogo runtime). Roadmap BASE accorciata a B0–B4. Vedi `piattaforma-base.md`. |
