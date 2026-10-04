@@ -48,8 +48,8 @@ Qui la vista combinata di avanzamento.
 
 | Step | Obiettivo | Stato | Branch | PR |
 |------|-----------|-------|--------|----|
-| B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | 🔜 | — | — |
-| B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | ⬜ | — | — |
+| B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | ✅ | `B0-bootstrap-jhipster` | #1 (mergiata) |
+| B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | 🔜 in review | `B1-convenzioni-api-mobile-ready` | — |
 | B2 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
 | B3 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
 | B4 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
@@ -182,6 +182,8 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-10-04 | B1 | `B1-convenzioni-api-mobile-ready` | in review | Convenzioni API & mobile-ready: versioning `/api/v1` per l'API di dominio (marker `@ApiV1` + `ApiVersioningConfiguration`, additivo), endpoint di esempio `/api/v1/version` + slice test, CORS prod env-driven, blocco OpenAPI scaricabile, `docs/convenzioni-api.md` e `docs/guida-entita-jdl.md`. |
+| 2026-10-04 | B0 | `B0-bootstrap-jhipster` | ✅ mergiata (PR #1) | Scaffold JHipster della base mergiato su `main` (commit `b5ac744`). |
 | 2026-09-30 | — | — | revisione 2 | Pivot su **JHipster** per la base (build-vs-buy: JHipster 9.3 supporta Spring Boot 4.1/Java 25/Angular 22). Custom ridotto allo starter AI/ML; i18n statico (abbandonato catalogo runtime). Roadmap BASE accorciata a B0–B4. Vedi `piattaforma-base.md`. |
 | 2026-09-30 | — | — | revisione 1 | Roadmap revisionata: fondamenta estratte in una piattaforma base a librerie; skin-lesion consumer. (Superata dalla revisione 2.) |
 | 2026-09-30 | — | — | setup | Creato questo documento di governo dello sviluppo autonomo. |

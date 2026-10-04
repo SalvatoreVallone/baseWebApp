@@ -62,8 +62,8 @@ Legenda: ✅ fatta · 🔜 prossimo · ⬜ da fare. Ogni step = un branch + una 
 
 | Step | Obiettivo | Stato | Deliverable |
 |------|-----------|-------|-------------|
-| **B0 — Bootstrap base con JHipster** | Scheletro generato | 🔜 | Repo base creato; app JHipster generata (monolite, Angular, JWT, PostgreSQL, OpenAPI); scelte JDL/opzioni documentate; build/run verificati |
-| **B1 — Convenzioni & API mobile-ready** | Contratto stabile | ⬜ | Versioning `/api/v1`, CORS per client nativi, convenzioni error/paginazione, spec OpenAPI scaricabile per codegen client; guida "come aggiungo un'entità (JDL)" |
+| **B0 — Bootstrap base con JHipster** | Scheletro generato | ✅ | Repo base creato; app JHipster generata (monolite, Angular, JWT, PostgreSQL, OpenAPI); scelte JDL/opzioni documentate; build/run verificati. PR #1 mergiata. |
+| **B1 — Convenzioni & API mobile-ready** | Contratto stabile | 🔜 in review | Versioning `/api/v1` (marker `@ApiV1`, additivo), CORS prod env-driven per client nativi, convenzioni error (RFC7807)/paginazione documentate, spec OpenAPI scaricabile per codegen; guida JDL. Vedi `docs/convenzioni-api.md` e `docs/guida-entita-jdl.md`. |
 | **B2 — Starter AI/ML** | Il pezzo custom | ⬜ | `ai-ml-integration-starter` pubblicato (Maven/GitHub Packages): contratto provider + adapter REST + provider mock; SemVer + config publishing |
 | **B3 — Blueprint deploy costo-zero** | Produzione a costo zero | ⬜ | Profilo GraalVM native (opzionale) documentato; target di deploy free-tier provato (es. Oracle Always Free + Postgres gestito); ML isolato/scale-to-zero |
 | **B4 — Archetype/create-app** | Avvio nuovo progetto | ⬜ | Ricetta ripetibile per un nuovo consumer: JDL base + dipendenza starter AI/ML + convenzioni; eventuale Angular lib se necessaria |
