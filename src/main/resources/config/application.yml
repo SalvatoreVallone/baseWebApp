@@ -228,3 +228,14 @@ jhipster:
 # ===================================================================
 
 # application:
+#   security:
+#     login-rate-limit:
+#       # Rate limit dei tentativi di autenticazione falliti (hardening B2b, vedi docs/sicurezza.md).
+#       # I valori qui sotto sono i default del codice (ApplicationProperties): decommentare solo
+#       # per modificarli.
+#       enabled: true           # false per disattivarlo (es. test funzionali)
+#       max-attempts: 5         # tentativi falliti per client prima del 429
+#       window: 5m              # finestra di conteggio (Duration: 30s, 5m, 1h...)
+#       max-tracked-clients: 10000
+#       paths:
+#         - /api/authenticate

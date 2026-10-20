@@ -2,7 +2,9 @@ package com.basewebapp.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import com.basewebapp.management.SecurityMetersService;
 import com.basewebapp.security.*;
+import com.basewebapp.web.filter.LoginRateLimitFilter;
 import com.basewebapp.web.filter.SpaWebFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,8 +28,18 @@ public class SecurityConfiguration {
 
     private final JHipsterProperties jHipsterProperties;
 
-    public SecurityConfiguration(JHipsterProperties jHipsterProperties) {
+    private final LoginRateLimiter loginRateLimiter;
+
+    private final SecurityMetersService securityMetersService;
+
+    public SecurityConfiguration(
+        JHipsterProperties jHipsterProperties,
+        LoginRateLimiter loginRateLimiter,
+        SecurityMetersService securityMetersService
+    ) {
         this.jHipsterProperties = jHipsterProperties;
+        this.loginRateLimiter = loginRateLimiter;
+        this.securityMetersService = securityMetersService;
     }
 
     @Bean
@@ -40,6 +52,9 @@ public class SecurityConfiguration {
         http.cors(withDefaults())
             .csrf(csrf -> csrf.disable())
             .addFilterAfter(new SpaWebFilter(), BasicAuthenticationFilter.class)
+            // Hardening B2b: rate limit sui tentativi di autenticazione (brute-force /
+            // credential stuffing). Vedi docs/sicurezza.md.
+            .addFilterAfter(new LoginRateLimitFilter(loginRateLimiter, securityMetersService), BasicAuthenticationFilter.class)
             .headers(headers ->
                 headers
                     .contentSecurityPolicy(csp -> csp.policyDirectives(jHipsterProperties.getSecurity().getContentSecurityPolicy()))

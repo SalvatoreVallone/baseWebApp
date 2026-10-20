@@ -42,6 +42,17 @@ class SecurityMetersServiceTests {
     }
 
     @Test
+    void testRateLimitedLoginsCounterIsCreatedAndBound() {
+        String meterName = SecurityMetersService.RATE_LIMITED_LOGINS_METER_NAME;
+
+        assertThat(meterRegistry.get(meterName).counter().count()).isZero();
+
+        securityMetersService.trackLoginRateLimited();
+
+        assertThat(meterRegistry.get(meterName).counter().count()).isEqualTo(1);
+    }
+
+    @Test
     void testCountMethodsShouldBeBoundToCorrectCounters() {
         assertThat(meterRegistry.get(INVALID_TOKENS_METER_EXPECTED_NAME).tag("cause", "expired").counter().count()).isZero();
 

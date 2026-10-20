@@ -132,4 +132,18 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
-# application:
+application:
+  security:
+    # Rate limit dei tentativi di autenticazione (hardening B2b, vedi docs/sicurezza.md §6).
+    # Tarabile senza rebuild via variabili d'ambiente.
+    #
+    # ATTENZIONE dietro reverse proxy: la chiave del rate limit è l'indirizzo remoto visto
+    # dall'applicazione. Se il backend sta dietro un proxy/ingress, impostare anche
+    # `server.forward-headers-strategy: native` (e assicurarsi che il proxy *sovrascriva*
+    # X-Forwarded-For), altrimenti tutti i client condividono l'IP del proxy e la soglia si
+    # applica all'intero traffico.
+    login-rate-limit:
+      enabled: ${LOGIN_RATE_LIMIT_ENABLED:true}
+      max-attempts: ${LOGIN_RATE_LIMIT_MAX_ATTEMPTS:5}
+      window: ${LOGIN_RATE_LIMIT_WINDOW:5m}
+      max-tracked-clients: ${LOGIN_RATE_LIMIT_MAX_TRACKED_CLIENTS:10000}
