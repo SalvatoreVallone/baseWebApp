@@ -88,11 +88,6 @@ Qui la vista combinata di avanzamento.
 
 - Messaggi in italiano, imperativi e specifici, coerenti con lo storico del repo.
 - Commit piccoli e coerenti (uno per unità logica), non un unico commit-monstre a fine step.
-- Ogni messaggio di commit termina con la riga di attribuzione:
-
-  ```
-  Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
-  ```
 
 ### 3.3 Pull request
 
@@ -105,11 +100,6 @@ Qui la vista combinata di avanzamento.
      l'URL corrispondente una volta noto owner/nome)
   3. fornisce **titolo e descrizione PR** già pronti da incollare (vedi template §5).
   L'utente apre la PR con un click, la revisiona e la mergia.
-- **Descrizione PR:** termina sempre con:
-
-  ```
-  🤖 Generated with [Claude Code](https://claude.com/claude-code)
-  ```
 
 - Se in futuro l'utente installa `gh` o fornisce un token, si passa alla creazione automatica della
   PR (aggiornare questa sezione in tal caso).
@@ -180,8 +170,6 @@ Claude segue questi passi a ogni step:
 
 ### Limiti noti
 <cosa NON è coperto / non verificabile in locale, onestamente>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 ---
