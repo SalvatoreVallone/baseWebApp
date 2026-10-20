@@ -64,7 +64,8 @@ Legenda: ✅ fatta · 🔜 prossimo · ⬜ da fare. Ogni step = un branch + una 
 |------|-----------|-------|-------------|
 | **B0 — Bootstrap base con JHipster** | Scheletro generato | ✅ | Repo base creato; app JHipster generata (monolite, Angular, JWT, PostgreSQL, OpenAPI); scelte JDL/opzioni documentate; build/run verificati. PR #1 mergiata. |
 | **B1 — Convenzioni & API mobile-ready** | Contratto stabile | ✅ | Versioning `/api/v1` (marker `@ApiV1`, additivo), CORS prod env-driven per client nativi, convenzioni error (RFC7807)/paginazione documentate, spec OpenAPI scaricabile per codegen; guida JDL. Vedi `docs/convenzioni-api.md` e `docs/guida-entita-jdl.md`. |
-| **B2 — Security review & hardening** | Base sicura e verificabile | 🔜 in review | Review sistematica (OWASP Top-10/ASVS) di base e API: injection, XSS, CSRF, auth/JWT, access control, security headers, secrets, dipendenze, rate-limit, audit, privacy dati sanitari. Hardening concreti (CSP prod, HSTS, actuator minimo, rate-limit login) + `docs/sicurezza.md` con postura e checklist; scansione dipendenze in CI. Vedi §4.1 |
+| **B2 — Security review & hardening** | Base sicura e verificabile | ✅ | Review sistematica (OWASP Top-10/ASVS) di base e API: injection, XSS, CSRF, auth/JWT, access control, security headers, secrets, dipendenze, rate-limit, audit, privacy dati sanitari. Hardening concreti (CSP prod, HSTS, actuator minimo, rate-limit login) + `docs/sicurezza.md` con postura e checklist; scansione dipendenze in CI. PR #3 mergiata. Vedi §4.1 |
+| **B2b — Rate limit login** | Brute-force mitigato | 🔜 in review | Rate limit dei tentativi di autenticazione falliti per client (in-memory, nessuna nuova dipendenza): `429` + `Retry-After` + problem+json, reset su login riuscito, metrica Micrometer, messaggio dedicato nella UI; configurabile via `application.security.login-rate-limit.*`. Chiude la raccomandazione aperta di B2. Vedi `sicurezza.md` §4.1 |
 | **B3 — Starter AI/ML** | Il pezzo custom | ⬜ | `ai-ml-integration-starter` pubblicato (Maven/GitHub Packages): contratto provider + adapter REST + provider mock; SemVer + config publishing |
 | **B4 — Blueprint deploy costo-zero** | Produzione a costo zero | ⬜ | Profilo GraalVM native (opzionale) documentato; target di deploy free-tier provato (es. Oracle Always Free + Postgres gestito); ML isolato/scale-to-zero |
 | **B5 — Archetype/create-app** | Avvio nuovo progetto | ⬜ | Ricetta ripetibile per un nuovo consumer: JDL base + dipendenza starter AI/ML + convenzioni; eventuale Angular lib se necessaria |
@@ -102,6 +103,9 @@ natura **sanitaria** dei dati del consumer skin-lesion.
 **Hardening previsti:** CSP prod più stretta, HSTS, esposizione actuator minima, eventuale
 rate-limit su `/api/authenticate`, documento `docs/sicurezza.md` con postura e checklist.
 
+**Esito:** tutti applicati in B2 tranne il rate-limit del login, portato nello step dedicato **B2b**
+(era l'unica raccomandazione aperta della review). Vedi `sicurezza.md` §4.1.
+
 ## 5. Roadmap — Traccia skin-lesion (questo repo → app JHipster)
 
 | Step | Obiettivo | Stato | Deliverable |
@@ -114,6 +118,12 @@ rate-limit su `/api/authenticate`, documento `docs/sicurezza.md` con postura e c
 | **S5 — Interoperabilità** (ex Fase 4) | Ecosistema | ⬜ | Export FHIR, mappatura LOINC/ATC |
 
 > **Ordine:** prima BASE B0→B3 (fino allo starter AI/ML consumabile, sicurezza inclusa), poi S0.
+>
+> **Decisioni prese per B3** (2026-10-20): lo starter vive in una **sottocartella di questo repo**
+> (`starters/ai-ml-integration-starter/`, pom indipendente, nessun impatto sul pom generato da
+> JHipster); publishing per ora **solo su `.m2` locale** (`mvn install`), con la configurazione
+> GitHub Packages scritta e documentata ma non eseguita — su questa macchina non c'è un token
+> GitHub, quindi un deploy reale non sarebbe verificabile.
 > B4/B5 in parallelo o dopo, quando la forma del consumer è chiara.
 
 ---

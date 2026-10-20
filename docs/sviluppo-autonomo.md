@@ -50,7 +50,8 @@ Qui la vista combinata di avanzamento.
 |------|-----------|-------|--------|----|
 | B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | ✅ | `B0-bootstrap-jhipster` | #1 (mergiata) |
 | B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | ✅ | `B1-convenzioni-api-mobile-ready` | #2 (mergiata) |
-| B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | 🔜 in review | `B2-security-hardening` | — |
+| B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | ✅ | `B2-security-hardening` | #3 (mergiata) |
+| B2b — Rate limit login | rate limit dei tentativi di autenticazione (429 + `Retry-After`) | 🔜 in review | `B2b-rate-limit-login` | — |
 | B3 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
 | B4 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
 | B5 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
@@ -70,7 +71,9 @@ Qui la vista combinata di avanzamento.
 
 > **Regole di dipendenza:** S0 richiede B0–B3 (base, sicurezza di base e starter AI/ML consumabile); l'AI sui dati (S3)
 > non parte prima che l'isolamento utenti sia configurato/solido.
-> **Prossimo passo concreto:** l'utente crea il repo base e ne comunica nome/URL → si parte da **B0**.
+> **Prossimo passo concreto:** merge di **B2b**, poi **B3 — Starter AI/ML** (posizione e publishing
+> già decisi: sottocartella `starters/ai-ml-integration-starter/` in questo repo, publishing su
+> `.m2` locale per ora — vedi `piattaforma-base.md` §5).
 
 ---
 
@@ -190,6 +193,8 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-10-20 | B2b | `B2b-rate-limit-login` | in review | Rate limit dei tentativi di autenticazione falliti per client: `LoginRateLimiter` (finestra fissa in-memory, nessuna nuova dipendenza) + `LoginRateLimitFilter` nella security chain → `429` con `Retry-After` e problem+json; reset su login riuscito; metrica `security.authentication.rate-limited`; configurabile via `application.security.login-rate-limit.*` (env in prod); messaggio dedicato nella UI di login (it/en). Verificato con 18 test (17 unitari eseguiti + 1 IT per la CI) e smoke test su istanza reale (H2). Chiude la raccomandazione aperta di B2 (`sicurezza.md` §6). |
+| 2026-10-20 | B2 | `B2-security-hardening` | ✅ mergiata (PR #3) | Security review & hardening mergiati su `main` (commit `54d413d`). |
 | 2026-10-04 | B2 | `B2-security-hardening` | in review | Hardening: HSTS esplicito, CSP prod più stretta (no `unsafe-eval`/googleapis; +object-src/base-uri/form-action/frame-ancestors), esposizione actuator minima in prod, `/management/prometheus` non più pubblico. Scansione dipendenze: profilo Maven `security` (OWASP dependency-check) + `npm audit` + workflow CI (+CodeQL). Documento `docs/sicurezza.md` (review OWASP, injection/XSS/CSRF, checklist, dati sanitari). |
 | 2026-10-04 | B1 | `B1-convenzioni-api-mobile-ready` | ✅ mergiata (PR #2) | Convenzioni API & mobile-ready mergiate su `main` (commit `9f3fc17`). |
 | 2026-10-04 | — | — | roadmap | Inserito **B2 — Security review & hardening** come prossimo step (prima dello Starter AI/ML); ex B2/B3/B4 → B3/B4/B5. Aggiunto un **gate di sicurezza ricorrente** alla Definition of Done (§4). Origine: verifica su richiesta della base generata (SQLi: nessun rischio; CSRF: ok by design con JWT in header; XSS: baseline buona, CSP prod da irrigidire). |
