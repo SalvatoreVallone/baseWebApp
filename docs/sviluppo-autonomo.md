@@ -113,7 +113,10 @@ Uno step è "done" e pronto per la PR solo quando **tutte** queste condizioni va
 
 - [ ] Il deliverable della fase (colonna "Obiettivo" in §2) è realizzato.
 - [ ] Il backend **compila** (`mvn -f backend/pom.xml -q -DskipTests package` o build Docker) senza
-      errori.
+      errori. In questo repo il comando di verifica è **`./mvnw -Dskip.installnodenpm -Dskip.npm
+      verify`**, non `test`: `modernizer`, l'enforcer e il repackage girano solo in `verify`, ed è
+      lì che la CI fallisce (lezione di B2c1: `Optional.get()` bocciato da modernizer era passato
+      inosservato perché in locale era stato eseguito solo `test`).
 - [ ] Il frontend **builda** (`npm run build` in `frontend/`) senza errori, se toccato.
 - [ ] I test rilevanti passano *oppure* è documentato esplicitamente perché non sono eseguibili in
       locale (com'è già il caso di Testcontainers su questa macchina — vedi log Fase 0/0b).
@@ -185,6 +188,7 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-11-03 | B2c1 | `B2c1-ci-verde` | in review | Primo run della CI introdotta da B2c: frontend verde, backend **rosso** su `modernizer` (gira in `verify`, non in `test`) che bocciava `Optional.get()` in `LoginRateLimitFilter` (codice di B2b, mai passato per `verify`). Sostituito con `orElse(null)` + controllo esplicito; `modernizer` pulito e `verify` locale ora arriva agli IT, che cadono solo per assenza di Docker. Aggiornata la DoD col comando di verifica corretto. **Aperto:** `CodeQL (javascript-typescript)` fallisce nello step Analyze in *tutti* i run di `security` da B2 — servono i log (richiedono login). |
 | 2026-11-03 | B2c | `B2c-ci-test-e-sicurezza` | in review | **CI dei test** (`ci.yml`): backend `verify` (unitari + IT con Testcontainers sul runner) con nohttp e javadoc, frontend prettier/eslint/test/build di produzione; prima nessun workflow eseguiva i test. `security.yml`: Node allineato a 24 (era 22, sotto `engines`) e nuovo job `npm audit` completo informativo sulle dipendenze di sviluppo. **Sicurezza:** Angular runtime 22.1.6→22.2.4 (chiude le 2 advisory High su `@angular/router`), tooling 22.1.8→22.2.5 (porta `zod` 4.4.3→4.6.6, advisory High), `concurrently` 10.0.5→10.0.6 (Critical via `shell-quote`) → `npm audit` di produzione a 0. Lockfile rigenerato (npm rifiutava l'aggiornamento incrementale): 194 versioni transitive cambiate. Verificato in locale: prettier, eslint, 298 test frontend, build di produzione, test backend. |
 | 2026-10-20 | B2b | `B2b-rate-limit-login` | in review | Rate limit dei tentativi di autenticazione falliti per client: `LoginRateLimiter` (finestra fissa in-memory, nessuna nuova dipendenza) + `LoginRateLimitFilter` nella security chain → `429` con `Retry-After` e problem+json; reset su login riuscito; metrica `security.authentication.rate-limited`; configurabile via `application.security.login-rate-limit.*` (env in prod); messaggio dedicato nella UI di login (it/en). Verificato con 18 test (17 unitari eseguiti + 1 IT per la CI) e smoke test su istanza reale (H2). Chiude la raccomandazione aperta di B2 (`sicurezza.md` §6). |
 | 2026-10-20 | B2 | `B2-security-hardening` | ✅ mergiata (PR #3) | Security review & hardening mergiati su `main` (commit `54d413d`). |
