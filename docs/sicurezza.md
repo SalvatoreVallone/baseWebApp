@@ -163,6 +163,12 @@ integrazione (che richiedono Docker) non girando né in locale né in CI non ver
 
 Esito: `npm audit --omit=dev --audit-level=high` → **0 vulnerabilità**.
 
+> **Nota (B2c1):** fino al 2026-11-03 il job CodeQL `javascript-typescript` **falliva in ogni run**
+> di questo workflow — l'input era scritto `language` invece di `languages`, veniva quindi ignorato,
+> e il job autorilevava anche Java/Kotlin fallendo senza build (exit 32). Nessuno se n'era accorto
+> perché i run rossi non bloccavano niente. Corretto, con `build-mode` esplicito per linguaggio e
+> `codeql-action` aggiornata a v4 (la v3 è in deprecazione da dicembre 2026).
+
 > Per abilitare dependency-check veloce: creare una NVD API key gratuita
 > (<https://nvd.nist.gov/developers/request-an-api-key>) e aggiungerla come secret `NVD_API_KEY`.
 

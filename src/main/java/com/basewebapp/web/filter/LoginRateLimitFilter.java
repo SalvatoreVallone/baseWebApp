@@ -51,18 +51,18 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
-        Optional<String> protectedPath = protectedPath(request);
-        if (protectedPath.isEmpty()) {
+        String protectedPath = protectedPath(request).orElse(null);
+        if (protectedPath == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String clientId = clientId(request);
-        Optional<Duration> retryAfter = loginRateLimiter.retryAfter(clientId);
-        if (retryAfter.isPresent()) {
+        Duration retryAfter = loginRateLimiter.retryAfter(clientId).orElse(null);
+        if (retryAfter != null) {
             securityMetersService.trackLoginRateLimited();
-            LOG.warn("Rate limit di autenticazione superato dal client {} su {}: richiesta rifiutata", clientId, protectedPath.get());
-            rejectWithTooManyRequests(response, protectedPath.get(), retryAfter.get());
+            LOG.warn("Rate limit di autenticazione superato dal client {} su {}: richiesta rifiutata", clientId, protectedPath);
+            rejectWithTooManyRequests(response, protectedPath, retryAfter);
             return;
         }
 
