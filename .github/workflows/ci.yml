@@ -9,8 +9,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # Esecuzione manuale dalla tab Actions, utile per provare la pipeline su un branch
-  # prima di aprire la PR.
+  # Esecuzione manuale dalla tab Actions. GitHub mostra il pulsante solo per i workflow già
+  # presenti sul branch di default: è quindi utilizzabile dopo il merge di questo step.
   workflow_dispatch:
 
 permissions:
