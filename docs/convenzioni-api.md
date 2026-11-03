@@ -85,6 +85,10 @@ Gli errori sono `application/problem+json`:
 - Errori di business custom: estendere `BadRequestAlertException` (o lanciare una sottoclasse di
   `AbstractThrowableProblem`) con `type`/`title`/`status` coerenti.
 - Non esporre stacktrace o dettagli interni in prod (default JHipster già conservativo).
+- **`429 Too Many Requests`**: restituito dal rate limit sui tentativi di autenticazione
+  (type `.../problem/too-many-requests`) con header **`Retry-After`** in secondi. I client — web e
+  nativi — devono trattarlo come errore temporaneo: messaggio dedicato e **nessun** ritentativo
+  prima di `Retry-After`. Vedi [`sicurezza.md`](sicurezza.md) §4.1.
 
 ---
 

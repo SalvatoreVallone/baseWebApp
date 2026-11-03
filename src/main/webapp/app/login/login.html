@@ -7,6 +7,11 @@
           <strong>Failed to sign in!</strong> Please check your credentials and try again.
         </div>
       }
+      @if (rateLimited()) {
+        <div class="alert alert-warning" data-cy="loginRateLimited" jhiTranslate="login.messages.error.ratelimited">
+          <strong>Too many attempts!</strong> Sign-in has been temporarily blocked. Please wait a few minutes and try again.
+        </div>
+      }
       <form class="form" (ngSubmit)="login()" [formGroup]="loginForm">
         <div class="mb-3">
           <label class="form-label" for="username" jhiTranslate="global.form.username.label">Username</label>

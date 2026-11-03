@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ElementRef } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Navigation, Router } from '@angular/router';
 
@@ -148,6 +149,20 @@ describe('Login', () => {
 
       // THEN
       expect(comp.authenticationError()).toEqual(true);
+      expect(comp.rateLimited()).toEqual(false);
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
+    });
+
+    it('should show the rate limit message instead of the credentials error on HTTP 429', () => {
+      // GIVEN
+      mockLoginService.login = vi.fn(() => throwError(() => new HttpErrorResponse({ status: 429 })));
+
+      // WHEN
+      comp.login();
+
+      // THEN
+      expect(comp.rateLimited()).toEqual(true);
+      expect(comp.authenticationError()).toEqual(false);
       expect(mockRouter.navigate).not.toHaveBeenCalled();
     });
   });

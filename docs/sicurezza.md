@@ -31,7 +31,7 @@
 | A04 Insecure Design | ✅ | Stateless, separazione ruoli, principio del minimo privilegio sugli endpoint. |
 | A05 Security Misconfiguration | ⚠️→✅ | Hardening B2: CSP prod più stretta, HSTS, esposizione actuator minima, prometheus non pubblico (§4). |
 | A06 Vulnerable Components | ⚠️ gestito | Scansione dipendenze aggiunta (OWASP dependency-check + `npm audit` + CI, §5). Da eseguire con continuità. |
-| A07 Auth Failures | ✅/⚠️ | JWT, BCrypt, account lockout non presente di default → **rate-limit login consigliato** (§6). |
+| A07 Auth Failures | ✅ | JWT, BCrypt e, dallo step B2b, **rate limit sui tentativi di autenticazione** (§4.1). Lockout permanente dell'account: volutamente non implementato (è a sua volta un vettore di DoS sugli utenti). |
 | A08 Integrity Failures | ✅ | Dipendenze da repository ufficiali; lockfile npm; `enforce-dependencyConvergence` nel pom. |
 | A09 Logging/Monitoring | ✅/⚠️ | Logging strutturato disponibile; audit degli accessi di dominio a carico del consumer (§7). |
 | A10 SSRF | ✅ n/a | La base non effettua fetch verso URL forniti dall'utente. Attenzione negli adapter dello starter AI/ML (B3). |
@@ -63,7 +63,7 @@ applicabile.
 
 ---
 
-## 4. Hardening applicati in B2
+## 4. Hardening applicati (B2, B2b)
 
 | Area | Modifica | File |
 |------|----------|------|
@@ -72,6 +72,7 @@ applicabile.
 | Actuator | In prod esposti solo `health,info,prometheus,metrics` (niente `env`/`configprops`/`liquibase`/`threaddump`) | `config/application-prod.yml` |
 | Metriche | `/management/prometheus` non più pubblico: ricade sotto ADMIN | `config/SecurityConfiguration.java` |
 | Dipendenze | Profilo Maven `security` (OWASP dependency-check) + script `npm audit` + workflow CI | `pom.xml`, `package.json`, `.github/workflows/security.yml` |
+| Brute-force login *(B2b)* | Rate limit dei tentativi di autenticazione falliti per client: oltre soglia `429` con `Retry-After` | `security/LoginRateLimiter.java`, `web/filter/LoginRateLimitFilter.java` (§4.1) |
 
 > **Nota di verifica onesta:** la presenza effettiva degli header (CSP/HSTS) e il corretto
 > funzionamento della SPA con la CSP prod più stretta vanno confermati con uno **smoke test su
@@ -79,6 +80,54 @@ applicabile.
 > build prod + browser). Le modifiche compilano e il YAML è valido.
 
 ---
+
+### 4.1 Rate limit dei tentativi di autenticazione (B2b)
+
+Mitiga brute-force e credential stuffing su `POST /api/authenticate`, che è `permitAll()` per
+necessità. Implementato **senza nuove dipendenze** (nessun bucket4j/Redis): il vincolo del progetto
+è costo zero e singola istanza.
+
+**Come funziona**
+
+- Conta i tentativi **falliti** (risposta non 2xx) per client in una **finestra a lunghezza fissa**.
+  Superata la soglia, il client riceve `429 Too Many Requests` fino alla scadenza della finestra,
+  con header `Retry-After` (secondi) e corpo `application/problem+json` (RFC 7807, vedi
+  [`convenzioni-api.md`](convenzioni-api.md) §2).
+- Un'autenticazione **riuscita azzera** il contatore: un utente legittimo non viene penalizzato dai
+  propri accessi, nemmeno dopo qualche errore di digitazione.
+- Chiave = **indirizzo remoto** del client. Le richieste respinte **non raggiungono** la catena di
+  autenticazione (nessun accesso al DB, nessun confronto BCrypt).
+- Riguarda solo il **POST**: il `GET /api/authenticate`, che verifica la sessione corrente, non è
+  limitato. Il frontend mostra un messaggio dedicato sul 429 (`login.messages.error.ratelimited`).
+- Metrica Micrometer `security.authentication.rate-limited` per allertare sui tentativi respinti
+  (esposta su `/management/prometheus`, che è sotto ADMIN).
+
+**Configurazione** (`application.security.login-rate-limit.*`; default nel codice in
+`config/ApplicationProperties.java`, in prod tarabile via env — vedi `config/application-prod.yml`):
+
+| Proprietà | Default | Env (prod) | Significato |
+|-----------|---------|------------|-------------|
+| `enabled` | `true` | `LOGIN_RATE_LIMIT_ENABLED` | Attiva/disattiva il rate limit |
+| `max-attempts` | `5` | `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` | Tentativi falliti consentiti per client nella finestra |
+| `window` | `5m` | `LOGIN_RATE_LIMIT_WINDOW` | Ampiezza della finestra di conteggio |
+| `max-tracked-clients` | `10000` | `LOGIN_RATE_LIMIT_MAX_TRACKED_CLIENTS` | Tetto ai client tracciati in memoria |
+| `paths` | `/api/authenticate` | — | Percorsi POST protetti (es. aggiungere `/api/account/reset-password/init`) |
+
+**Limiti noti (accettati, da rivalutare al deploy — step B4)**
+
+1. **Stato in memoria, per-istanza**: il conteggio si perde al restart e, con più istanze dietro
+   load balancer, la soglia effettiva si moltiplica per il numero di istanze. In quello scenario
+   serve un rate limit anche sul reverse proxy (o uno store condiviso).
+2. **Dietro reverse proxy serve `server.forward-headers-strategy`** (es. `native`, già impostato nel
+   profilo `dev`): senza, l'indirizzo visto è quello del proxy e la soglia si applica all'intero
+   traffico — un autogol da DoS. Il proxy deve inoltre **sovrascrivere** `X-Forwarded-For`,
+   altrimenti un client può falsificarlo e aggirare il limite.
+3. **NAT/IPv6**: client dietro lo stesso IP pubblico condividono la soglia; chi dispone di molti
+   indirizzi può ruotarli. È una mitigazione, non una difesa completa: per attacchi distribuiti
+   servono contromisure a monte (WAF, fail2ban, protezione dell'edge).
+4. Sotto flood di chiavi diverse, il tetto `max-tracked-clients` può far evacuare anticipatamente
+   finestre attive (si scartano prima quelle scadute, poi le più vecchie).
+
 
 ## 5. Scansione delle dipendenze
 
@@ -102,9 +151,13 @@ dependency-check (con `secrets.NVD_API_KEY` se configurata) e **CodeQL** (query
 
 ## 6. Raccomandazioni aperte (non ancora implementate)
 
-- **Rate limiting / lockout su `/api/authenticate`**: non presente di default. Consigliato prima
-  dell'esposizione pubblica (es. bucket4j in-memory o a livello di reverse proxy). Mitiga
-  brute-force/credential stuffing.
+- **Rate limit distribuito**: quello di B2b (§4.1) è in-memory e per-istanza. Prima di scalare a
+  più istanze, replicarlo sul reverse proxy o adottare uno store condiviso.
+- **Aggiornare `@angular/router`** (rilevato il 2026-10-20 da `npm audit`, **pre-esistente**, non
+  introdotto da B2b): due advisory High di DoS — GHSA-ff3f-86qr-9cv3 e GHSA-62vg-58rm-qff7 — su
+  `22.0.0 - 22.2.0`, entrambe sfruttabili **solo in Server-Side Rendering**, che questa base non
+  usa. Il fix è salire a `22.2.3`, fuori dal range dichiarato in `package.json`: da fare come step
+  a sé (bump Angular), non dentro uno step funzionale.
 - **Rotazione/scadenza token**: valutare refresh token e TTL più corto per i client sensibili.
 - **TLS end-to-end**: garantire HTTPS al reverse proxy (HSTS ha effetto solo su HTTPS).
 - **Secret management**: in prod usare variabili d'ambiente / vault, mai `application-secret*.yml`

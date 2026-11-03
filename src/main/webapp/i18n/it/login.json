@@ -9,7 +9,8 @@
     },
     "messages": {
       "error": {
-        "authentication": "<strong>Accesso non riuscito!</strong> Si prega di controllare le credenziali e riprovare."
+        "authentication": "<strong>Accesso non riuscito!</strong> Si prega di controllare le credenziali e riprovare.",
+        "ratelimited": "<strong>Troppi tentativi!</strong> L'accesso è stato temporaneamente bloccato. Attendi qualche minuto e riprova."
       }
     },
     "password": {
