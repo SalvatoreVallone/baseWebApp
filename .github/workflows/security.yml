@@ -26,11 +26,28 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Install dependencies
         run: npm ci --ignore-scripts
       - name: npm audit (fallisce su High/Critical)
         run: npm audit --omit=dev --audit-level=high
+
+  frontend-dev-audit:
+    name: npm audit (incluse dipendenze di sviluppo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: npm audit completo
+        # INFORMATIVO, non bloccante: le dipendenze di sviluppo non vengono distribuite, ma girano
+        # sulle macchine degli sviluppatori e sui runner, quindi le vulnerabilità restano visibili.
+        # Il gate che blocca resta quello sulle dipendenze di produzione (job frontend-audit).
+        continue-on-error: true
+        run: npm audit --audit-level=high
 
   backend-dependency-check:
     name: OWASP dependency-check (backend)
@@ -63,13 +80,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [java-kotlin, javascript-typescript]
+        include:
+          # build-mode esplicito: Java viene compilato dal nostro step Maven (`manual`), il
+          # JavaScript/TypeScript non richiede build (`none`).
+          - language: java-kotlin
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
     steps:
       - uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
-          language: ${{ matrix.language }}
+          # `languages` al plurale: con `language` l'input veniva ignorato e il job
+          # javascript-typescript autorilevava anche Java/Kotlin, fallendo senza build (exit 32).
+          # Era la causa dei run rossi di questo workflow fin da B2.
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           queries: security-extended
       - name: Setup Java
         if: matrix.language == 'java-kotlin'
@@ -82,4 +109,4 @@ jobs:
         if: matrix.language == 'java-kotlin'
         run: ./mvnw -ntp -DskipTests -Dskip.installnodenpm -Dskip.npm compile
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
