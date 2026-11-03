@@ -125,6 +125,10 @@ Si usa il wrapper Maven del repo (non serve un Maven installato):
 ./mvnw -f starters/ai-ml-integration-starter/pom.xml install
 ```
 
+In **CI** ([`ci.yml`](../../.github/workflows/ci.yml)) il job `Starter AI/ML` esegue `verify` su
+questo pom a ogni PR; CodeQL e OWASP dependency-check lo analizzano insieme all'applicazione
+([`security.yml`](../../.github/workflows/security.yml)).
+
 `install` pubblica nel repository Maven **locale** (`~/.m2`): è la modalità scelta per ora, perché su
 questa macchina non c'è un token GitHub e un deploy remoto non sarebbe verificabile. Le applicazioni
 consumatrici (skin-lesion, step S0/S1) risolvono così la dipendenza.
