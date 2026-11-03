@@ -51,8 +51,8 @@ Qui la vista combinata di avanzamento.
 | B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | ✅ | `B0-bootstrap-jhipster` | #1 (mergiata) |
 | B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | ✅ | `B1-convenzioni-api-mobile-ready` | #2 (mergiata) |
 | B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | ✅ | `B2-security-hardening` | #3 (mergiata) |
-| B2b — Rate limit login | rate limit dei tentativi di autenticazione (429 + `Retry-After`) | 🔜 in review | `B2b-rate-limit-login` | — |
-| B3 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
+| B2b — Rate limit login | rate limit dei tentativi di autenticazione (429 + `Retry-After`) | ✅ | `B2b-rate-limit-login` | #4 (mergiata) |
+| B3 — Starter AI/ML | contratto provider pluggable + adapter REST + mock (Maven, `.m2` locale) | 🔜 in review | `B3-starter-ai-ml` | — |
 | B4 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
 | B5 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
 
@@ -71,9 +71,9 @@ Qui la vista combinata di avanzamento.
 
 > **Regole di dipendenza:** S0 richiede B0–B3 (base, sicurezza di base e starter AI/ML consumabile); l'AI sui dati (S3)
 > non parte prima che l'isolamento utenti sia configurato/solido.
-> **Prossimo passo concreto:** merge di **B2b**, poi **B3 — Starter AI/ML** (posizione e publishing
-> già decisi: sottocartella `starters/ai-ml-integration-starter/` in questo repo, publishing su
-> `.m2` locale per ora — vedi `piattaforma-base.md` §5).
+> **Prossimo passo concreto:** merge di **B3**; poi **B4** (deploy costo-zero) o **B5** (archetype)
+> sulla base, oppure si passa alla traccia skin-lesion con **S0**, che ora ha lo starter AI/ML
+> consumabile dal `.m2` locale.
 
 ---
 
@@ -181,6 +181,8 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-11-03 | B3 | `B3-starter-ai-ml` | in review | Starter AI/ML `com.basewebapp.platform:ai-ml-integration-starter:0.1.0-SNAPSHOT` in `starters/ai-ml-integration-starter/` (progetto Maven indipendente, non modulo del pom JHipster): contratto `InferenceProvider`/`InferenceRequest`/`InferenceResponse`, `InferenceProviderRegistry` (selezione per nome o per task, provider di default), `RestInferenceProvider` (adapter HTTP con contratto `predictions[]`, api-key opzionale, errori → `InferenceException`), `MockInferenceProvider`, auto-configuration + `platform.ai.*`. 26 test unitari verdi (incluso `MockRestServiceServer`) + smoke test di un'app consumatrice esterna che risolve lo starter dal `.m2` locale. Publishing GitHub Packages predisposto ma non attivo. |
+| 2026-10-20 | B2b | `B2b-rate-limit-login` | ✅ mergiata (PR #4) | Rate limit del login mergiato su `main` (commit `f6a8aa3`). |
 | 2026-10-20 | B2b | `B2b-rate-limit-login` | in review | Rate limit dei tentativi di autenticazione falliti per client: `LoginRateLimiter` (finestra fissa in-memory, nessuna nuova dipendenza) + `LoginRateLimitFilter` nella security chain → `429` con `Retry-After` e problem+json; reset su login riuscito; metrica `security.authentication.rate-limited`; configurabile via `application.security.login-rate-limit.*` (env in prod); messaggio dedicato nella UI di login (it/en). Verificato con 18 test (17 unitari eseguiti + 1 IT per la CI) e smoke test su istanza reale (H2). Chiude la raccomandazione aperta di B2 (`sicurezza.md` §6). |
 | 2026-10-20 | B2 | `B2-security-hardening` | ✅ mergiata (PR #3) | Security review & hardening mergiati su `main` (commit `54d413d`). |
 | 2026-10-04 | B2 | `B2-security-hardening` | in review | Hardening: HSTS esplicito, CSP prod più stretta (no `unsafe-eval`/googleapis; +object-src/base-uri/form-action/frame-ancestors), esposizione actuator minima in prod, `/management/prometheus` non più pubblico. Scansione dipendenze: profilo Maven `security` (OWASP dependency-check) + `npm audit` + workflow CI (+CodeQL). Documento `docs/sicurezza.md` (review OWASP, injection/XSS/CSRF, checklist, dati sanitari). |
