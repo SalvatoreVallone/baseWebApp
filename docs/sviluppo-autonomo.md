@@ -51,7 +51,8 @@ Qui la vista combinata di avanzamento.
 | B0 — Bootstrap base con JHipster | app JHipster generata (JWT/Angular/PostgreSQL/OpenAPI) | ✅ | `B0-bootstrap-jhipster` | #1 (mergiata) |
 | B1 — Convenzioni & API mobile-ready | `/api/v1`, CORS, OpenAPI scaricabile, guida JDL | ✅ | `B1-convenzioni-api-mobile-ready` | #2 (mergiata) |
 | B2 — Security review & hardening | review sistematica (OWASP) + hardening base/API; `docs/sicurezza.md` | ✅ | `B2-security-hardening` | #3 (mergiata) |
-| B2b — Rate limit login | rate limit dei tentativi di autenticazione (429 + `Retry-After`) | 🔜 in review | `B2b-rate-limit-login` | — |
+| B2b — Rate limit login | rate limit dei tentativi di autenticazione (429 + `Retry-After`) | ✅ | `B2b-rate-limit-login` | #4 (mergiata) |
+| B2c — CI dei test & dipendenze | workflow che esegue davvero i test; advisory High/Critical chiuse | 🔜 in review | `B2c-ci-test-e-sicurezza` | — |
 | B3 — Starter AI/ML | contratto provider pluggable + mock (Maven/Packages) | ⬜ | — | — |
 | B4 — Blueprint deploy costo-zero | GraalVM native (opz.), free-tier, ML isolato | ⬜ | — | — |
 | B5 — Archetype/create-app | ricetta nuovo consumer (JDL + starter) | ⬜ | — | — |
@@ -116,6 +117,9 @@ Uno step è "done" e pronto per la PR solo quando **tutte** queste condizioni va
 - [ ] Il frontend **builda** (`npm run build` in `frontend/`) senza errori, se toccato.
 - [ ] I test rilevanti passano *oppure* è documentato esplicitamente perché non sono eseguibili in
       locale (com'è già il caso di Testcontainers su questa macchina — vedi log Fase 0/0b).
+      Dallo step B2c i test (unitari **e** di integrazione) girano in CI su ogni PR
+      (`.github/workflows/ci.yml`): quello che non è verificabile in locale deve almeno essere
+      verde lì prima del merge.
 - [ ] La verifica end-to-end sensata per lo step è stata fatta (pipeline Docker, chiamate API, ecc.)
       **oppure** i limiti di verifica sono dichiarati onestamente nella descrizione PR.
 - [ ] Nessuna regressione evidente sulle funzionalità esistenti.
@@ -181,6 +185,7 @@ branch, esito.
 
 | Data | Fase | Branch | Stato | Note |
 |------|------|--------|-------|------|
+| 2026-11-03 | B2c | `B2c-ci-test-e-sicurezza` | in review | **CI dei test** (`ci.yml`): backend `verify` (unitari + IT con Testcontainers sul runner) con nohttp e javadoc, frontend prettier/eslint/test/build di produzione; prima nessun workflow eseguiva i test. `security.yml`: Node allineato a 24 (era 22, sotto `engines`) e nuovo job `npm audit` completo informativo sulle dipendenze di sviluppo. **Sicurezza:** Angular runtime 22.1.6→22.2.4 (chiude le 2 advisory High su `@angular/router`), tooling 22.1.8→22.2.5 (porta `zod` 4.4.3→4.6.6, advisory High), `concurrently` 10.0.5→10.0.6 (Critical via `shell-quote`) → `npm audit` di produzione a 0. Lockfile rigenerato (npm rifiutava l'aggiornamento incrementale): 194 versioni transitive cambiate. Verificato in locale: prettier, eslint, 298 test frontend, build di produzione, test backend. |
 | 2026-10-20 | B2b | `B2b-rate-limit-login` | in review | Rate limit dei tentativi di autenticazione falliti per client: `LoginRateLimiter` (finestra fissa in-memory, nessuna nuova dipendenza) + `LoginRateLimitFilter` nella security chain → `429` con `Retry-After` e problem+json; reset su login riuscito; metrica `security.authentication.rate-limited`; configurabile via `application.security.login-rate-limit.*` (env in prod); messaggio dedicato nella UI di login (it/en). Verificato con 18 test (17 unitari eseguiti + 1 IT per la CI) e smoke test su istanza reale (H2). Chiude la raccomandazione aperta di B2 (`sicurezza.md` §6). |
 | 2026-10-20 | B2 | `B2-security-hardening` | ✅ mergiata (PR #3) | Security review & hardening mergiati su `main` (commit `54d413d`). |
 | 2026-10-04 | B2 | `B2-security-hardening` | in review | Hardening: HSTS esplicito, CSP prod più stretta (no `unsafe-eval`/googleapis; +object-src/base-uri/form-action/frame-ancestors), esposizione actuator minima in prod, `/management/prometheus` non più pubblico. Scansione dipendenze: profilo Maven `security` (OWASP dependency-check) + `npm audit` + workflow CI (+CodeQL). Documento `docs/sicurezza.md` (review OWASP, injection/XSS/CSRF, checklist, dati sanitari). |

@@ -23,5 +23,4 @@ import org.springframework.web.bind.annotation.RestController;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @RestController
-public @interface ApiV1 {
-}
+public @interface ApiV1 {}
