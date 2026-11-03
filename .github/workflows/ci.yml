@@ -1,0 +1,66 @@
+name: ci
+
+# Pipeline di test (step B2c). Prima di questo workflow nessuna automazione eseguiva i test del
+# progetto: `security.yml` compila con -DskipTests, quindi i test di integrazione (*IT, che
+# richiedono Docker/Testcontainers) non venivano eseguiti da nessuna parte — né in locale sulle
+# macchine senza Docker, né in CI. Vedi docs/sviluppo-autonomo.md §4.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (unit + integration)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: nohttp
+        run: ./mvnw -ntp checkstyle:check
+      - name: Javadoc
+        run: ./mvnw -ntp -Dskip.installnodenpm -Dskip.npm javadoc:javadoc
+      - name: Test unitari e di integrazione
+        # I test *IT usano Testcontainers: il runner GitHub fornisce il Docker che manca sulle
+        # macchine di sviluppo senza Docker Desktop.
+        run: ./mvnw -ntp -Dskip.installnodenpm -Dskip.npm verify
+      - name: Report dei test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            target/surefire-reports/**
+            target/failsafe-reports/**
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend (prettier, lint, test, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Prettier
+        run: npm run prettier:check
+      - name: Test
+        # Lo script `pretest` esegue eslint prima dei test.
+        run: npm test
+      - name: Build di produzione
+        run: npm run webapp:build:prod
