@@ -9,6 +9,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Esecuzione manuale dalla tab Actions, utile per provare la pipeline su un branch
+  # prima di aprire la PR.
+  workflow_dispatch:
 
 permissions:
   contents: read
