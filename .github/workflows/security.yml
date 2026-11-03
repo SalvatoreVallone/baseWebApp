@@ -66,12 +66,21 @@ jobs:
         run: >
           ./mvnw -ntp -Psecurity org.owasp:dependency-check-maven:check
           -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+      - name: OWASP dependency-check (starter AI/ML)
+        # Il DB NVD è già in cache dal passo precedente, quindi questa esecuzione è rapida.
+        continue-on-error: true
+        run: >
+          ./mvnw -ntp -f starters/ai-ml-integration-starter/pom.xml
+          org.owasp:dependency-check-maven:12.1.9:check
+          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
-          path: target/dependency-check-report.*
+          path: |
+            target/dependency-check-report.*
+            starters/ai-ml-integration-starter/target/dependency-check-report.*
           if-no-files-found: ignore
 
   codeql:
@@ -108,5 +117,9 @@ jobs:
       - name: Build (Java)
         if: matrix.language == 'java-kotlin'
         run: ./mvnw -ntp -DskipTests -Dskip.installnodenpm -Dskip.npm compile
+      - name: Build (starter AI/ML)
+        # Progetto Maven indipendente: va compilato a parte perché CodeQL lo analizzi.
+        if: matrix.language == 'java-kotlin'
+        run: ./mvnw -ntp -f starters/ai-ml-integration-starter/pom.xml -DskipTests compile
       - name: Analyze
         uses: github/codeql-action/analyze@v4

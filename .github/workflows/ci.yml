@@ -49,6 +49,28 @@ jobs:
             target/failsafe-reports/**
           if-no-files-found: ignore
 
+  starter-ai-ml:
+    name: Starter AI/ML (test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Test dello starter
+        # Progetto Maven indipendente: si builda col wrapper del repo passando il suo pom.
+        # `verify` esegue i test e produce anche il jar dei sorgenti.
+        run: ./mvnw -ntp -f starters/ai-ml-integration-starter/pom.xml verify
+      - name: Report dei test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: starter-ai-ml-test-reports
+          path: starters/ai-ml-integration-starter/target/surefire-reports/**
+          if-no-files-found: ignore
+
   frontend:
     name: Frontend (prettier, lint, test, build)
     runs-on: ubuntu-latest
