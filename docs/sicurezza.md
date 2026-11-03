@@ -144,6 +144,25 @@ In **CI** ([`.github/workflows/security.yml`](../.github/workflows/security.yml)
 dependency-check (con `secrets.NVD_API_KEY` se configurata) e **CodeQL** (query
 `security-extended` per Java e TypeScript) su push/PR e con schedulazione settimanale.
 
+Dallo step **B2c** c'è anche un job `npm audit` **completo** (incluse le dipendenze di sviluppo),
+**informativo e non bloccante**: le dipendenze di sviluppo non vengono distribuite, ma girano sulle
+macchine degli sviluppatori e sui runner, quindi le loro vulnerabilità vanno almeno viste. Il gate
+che blocca resta quello sulle dipendenze di **produzione**.
+
+Sempre da B2c i test del progetto vengono eseguiti in CI
+([`ci.yml`](../.github/workflows/ci.yml)): prima nessuna automazione li eseguiva, e i test di
+integrazione (che richiedono Docker) non girando né in locale né in CI non verificavano nulla.
+
+### 5.1 Aggiornamenti applicati in B2c (2026-11-03)
+
+| Dipendenza | Da → a | Motivo |
+|------------|--------|--------|
+| `@angular/*` (runtime) | 22.1.6 → 22.2.4 | Due advisory **High** di DoS su `@angular/router` (GHSA-ff3f-86qr-9cv3, GHSA-62vg-58rm-qff7), sfruttabili solo in SSR — non usato qui, ma il range vulnerabile era dichiarato |
+| `@angular/build`, `@angular/cli` | 22.1.8 → 22.2.5 | Allineamento al runtime e, di conseguenza, `zod` 4.4.3 → 4.6.6: advisory **High** di esaurimento memoria (GHSA-mrhx-c7xc-m3w5), transitiva via `@angular/forms` |
+| `concurrently` | 10.0.5 → 10.0.6 | Advisory **Critical** di command injection via `shell-quote` (dipendenza di sviluppo) |
+
+Esito: `npm audit --omit=dev --audit-level=high` → **0 vulnerabilità**.
+
 > Per abilitare dependency-check veloce: creare una NVD API key gratuita
 > (<https://nvd.nist.gov/developers/request-an-api-key>) e aggiungerla come secret `NVD_API_KEY`.
 
@@ -153,11 +172,12 @@ dependency-check (con `secrets.NVD_API_KEY` se configurata) e **CodeQL** (query
 
 - **Rate limit distribuito**: quello di B2b (§4.1) è in-memory e per-istanza. Prima di scalare a
   più istanze, replicarlo sul reverse proxy o adottare uno store condiviso.
-- **Aggiornare `@angular/router`** (rilevato il 2026-10-20 da `npm audit`, **pre-esistente**, non
-  introdotto da B2b): due advisory High di DoS — GHSA-ff3f-86qr-9cv3 e GHSA-62vg-58rm-qff7 — su
-  `22.0.0 - 22.2.0`, entrambe sfruttabili **solo in Server-Side Rendering**, che questa base non
-  usa. Il fix è salire a `22.2.3`, fuori dal range dichiarato in `package.json`: da fare come step
-  a sé (bump Angular), non dentro uno step funzionale.
+- **`generator-jhipster` → `simple-git` / `yeoman-generator`** (dipendenze di **sviluppo**, senza
+  fix a monte): advisory Critical/High di command execution su `simple-git` ≤ 4.0.1, che
+  `generator-jhipster` 9.4.0 (l'ultima disponibile) pinna a `3.36.0`. L'unico "fix" proposto da
+  `npm audit` è il downgrade a `generator-jhipster` 6.10.5, inaccettabile. Non riguarda il runtime
+  né l'immagine Docker: si attiva solo eseguendo il generatore. Mitigazione: eseguire
+  `jhipster` solo su repository fidati; rivalutare alla prossima release del generatore.
 - **Rotazione/scadenza token**: valutare refresh token e TTL più corto per i client sensibili.
 - **TLS end-to-end**: garantire HTTPS al reverse proxy (HSTS ha effetto solo su HTTPS).
 - **Secret management**: in prod usare variabili d'ambiente / vault, mai `application-secret*.yml`
