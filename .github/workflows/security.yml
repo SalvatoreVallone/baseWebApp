@@ -80,13 +80,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [java-kotlin, javascript-typescript]
+        include:
+          # build-mode esplicito: Java viene compilato dal nostro step Maven (`manual`), il
+          # JavaScript/TypeScript non richiede build (`none`).
+          - language: java-kotlin
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
     steps:
       - uses: actions/checkout@v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
-          language: ${{ matrix.language }}
+          # `languages` al plurale: con `language` l'input veniva ignorato e il job
+          # javascript-typescript autorilevava anche Java/Kotlin, fallendo senza build (exit 32).
+          # Era la causa dei run rossi di questo workflow fin da B2.
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           queries: security-extended
       - name: Setup Java
         if: matrix.language == 'java-kotlin'
@@ -99,4 +109,4 @@ jobs:
         if: matrix.language == 'java-kotlin'
         run: ./mvnw -ntp -DskipTests -Dskip.installnodenpm -Dskip.npm compile
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
