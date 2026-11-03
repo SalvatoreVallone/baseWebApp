@@ -73,6 +73,8 @@ out/
 ######################
 /log/
 /target/
+# Build degli starter condivisi (progetti Maven indipendenti, vedi starters/*/README.md)
+starters/*/target/
 
 ######################
 # Gradle
