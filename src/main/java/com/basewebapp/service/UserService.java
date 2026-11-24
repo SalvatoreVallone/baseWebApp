@@ -54,7 +54,9 @@ public class UserService {
     }
 
     public Optional<User> activateRegistration(String key) {
-        LOG.debug("Activating user for activation key {}", key);
+        // La activation key non va nei log: chi li legge potrebbe attivare l'account al posto
+        // dell'utente. Vedi docs/sicurezza.md §5.2 (triage CodeQL, step B3b).
+        LOG.debug("Activating user from the submitted activation key");
         return userRepository.findOneByActivationKey(key).map(user -> {
             // activate given user for the registration key.
             user.setActivated(true);
@@ -66,7 +68,9 @@ public class UserService {
     }
 
     public Optional<User> completePasswordReset(String newPassword, String key) {
-        LOG.debug("Reset user password for reset key {}", key);
+        // La reset key non va nei log: chi li legge potrebbe reimpostare la password
+        // dell'utente. Vedi docs/sicurezza.md §5.2 (triage CodeQL, step B3b).
+        LOG.debug("Completing password reset from the submitted reset key");
         return userRepository
             .findOneByResetKey(key)
             .filter(user -> user.getResetDate().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)))

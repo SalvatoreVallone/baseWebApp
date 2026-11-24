@@ -39,7 +39,10 @@ export default class PasswordStrengthBar {
 
   measureStrength(p: string): number {
     let force = 0;
-    const regex = /[$-/:-?{-~!"^_`[\]]/g; // "
+    // Caratteri enumerati invece di range ($-/, :-?, {-~): l'insieme è identico, ma i range
+    // includevano intervalli ASCII poco evidenti (CodeQL: overly permissive regular expression
+    // range). Vedi docs/sicurezza.md §5.2.
+    const regex = /[$%&'()*+,\-./:;<=>?{|}~!"^_`[\]]/g;
     const lowerLetters = /[a-z]+/.test(p);
     const upperLetters = /[A-Z]+/.test(p);
     const numbers = /\d+/.test(p);
