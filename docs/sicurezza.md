@@ -174,6 +174,40 @@ Esito: `npm audit --omit=dev --audit-level=high` → **0 vulnerabilità**.
 
 ---
 
+### 5.2 Triage degli alert CodeQL (B3b, 2026-11-24)
+
+CodeQL ha iniziato a produrre alert solo dopo il fix di B2c1 (prima il job falliva senza analizzare nulla, vedi la nota
+in §5): i **17 alert** su `main` sono quindi la **prima fotografia reale** della base, vecchi quanto
+il codice che li genera e non introdotti dagli step recenti. Le query attive sono
+`security-extended`, più ampie del set di default: il conteggio include findings a confidenza bassa.
+
+| Query | N° | Esito | Motivo |
+|-------|----|-------|--------|
+| Insertion of sensitive information into log files (`UserService`) | 1 | **Corretto in B3b** | `LOG.debug` stampava la **reset key**: chi legge i log può reimpostare la password di quell'utente. Rimossa dal messaggio (stessa cosa per la activation key a `:57`) |
+| Overly permissive regular expression range (`password-strength-bar.ts`) | 1 | **Corretto in B3b** | I range `$-/`, `:-?`, `{-~` coprivano intervalli ASCII poco evidenti. Caratteri ora enumerati: insieme **identico** (verificato su tutto l'ASCII stampabile), nessun cambio di comportamento |
+| Log Injection (`MailService`, `UserService`, `UserResource`, `AuthorityResource`) | 12 | **Da chiudere: mitigato** | `logback-spring.xml` registra `CRLFLogConverter` (JHipster) e i pattern console/file usano `%crlf(%m)`: CR/LF nei messaggi sono neutralizzati. CodeQL non legge la configurazione di logback e segnala i call site |
+| Disabled Spring CSRF protection (`SecurityConfiguration`) | 1 | **Da chiudere: corretto by design** | Sessione stateless, JWT nell'header `Authorization` e non in cookie → CSRF non applicabile (§3.3). Il caveat "se si passa ai cookie, riattivare il CSRF" è già documentato |
+| Empty password in configuration file (`application-secret-samples.yml`, `grafana/.../datasource.yml`) | 2 | **Da chiudere: non è un segreto** | Il primo è il **template** dei segreti, che mostra le chiavi da valorizzare; il secondo è il datasource Prometheus dello stack di monitoraggio **locale**, dove la password non è usata. Nessuna credenziale reale nel repo |
+
+**Gli alert "da chiudere" vanno dismissati a mano** dall'interfaccia (l'API di code scanning richiede
+autenticazione). Motivazioni pronte:
+
+- *Log Injection (12)* — "Mitigato a livello di configurazione: `logback-spring.xml` applica
+  `CRLFLogConverter` di JHipster via `%crlf(%m)` su console e file, quindi CR/LF nei valori loggati
+  sono neutralizzati. CodeQL non analizza la configurazione di logback. Vedi `docs/sicurezza.md` §5.2."
+  → motivo GitHub: *Won't fix* (rischio mitigato altrove).
+- *Disabled Spring CSRF (1)* — "Scelta di progetto: autenticazione JWT stateless con token
+  nell'header `Authorization`, nessun cookie di sessione, quindi il CSRF non è applicabile. Vedi
+  `docs/sicurezza.md` §3.3." → motivo GitHub: *False positive*.
+- *Empty password in configuration (2)* — "File di esempio dei segreti e stack di monitoraggio
+  locale: nessuna credenziale reale, i valori di produzione arrivano da variabili d'ambiente. Vedi
+  `docs/sicurezza.md` §5.2." → motivo GitHub: *Used in tests / non applicabile*.
+
+**Attenuante misurata, non assunta:** in produzione `logging.level.com.basewebapp` è `INFO`
+(`config/application-prod.yml`), quindi le `LOG.debug` coinvolte non vengono stampate; in **dev** il
+livello è `DEBUG` e lì venivano stampate davvero — motivo per cui le due key sono state rimosse dal
+messaggio invece di essere lasciate con un dismiss.
+
 ## 6. Raccomandazioni aperte (non ancora implementate)
 
 - **Rate limit distribuito**: quello di B2b (§4.1) è in-memory e per-istanza. Prima di scalare a
@@ -184,6 +218,10 @@ Esito: `npm audit --omit=dev --audit-level=high` → **0 vulnerabilità**.
   `npm audit` è il downgrade a `generator-jhipster` 6.10.5, inaccettabile. Non riguarda il runtime
   né l'immagine Docker: si attiva solo eseguendo il generatore. Mitigazione: eseguire
   `jhipster` solo su repository fidati; rivalutare alla prossima release del generatore.
+- **PII nei log**: il codice generato logga email e login a livello `DEBUG` (`MailService`,
+  `UserService`, `UserResource`). In prod il livello è `INFO`, quindi non vengono stampate, ma per un
+  consumer sanitario (§7) va deciso se ridurli comunque: toccare quei call site significa divergere
+  dal codice generato da JHipster, con attrito a ogni rigenerazione. Emerso dal triage §5.2.
 - **Rotazione/scadenza token**: valutare refresh token e TTL più corto per i client sensibili.
 - **TLS end-to-end**: garantire HTTPS al reverse proxy (HSTS ha effetto solo su HTTPS).
 - **Secret management**: in prod usare variabili d'ambiente / vault, mai `application-secret*.yml`
